@@ -11,8 +11,9 @@ const client = new SiteFactoryClient({
 
 async function main() {
   try {
-    const response = await client.domains.get(211);
+    const response = await client.sites.list();
 
+    //console.log(JSON.stringify(response));
     console.log(response);
   } catch (err) {
     console.error(err);
