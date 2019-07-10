@@ -1,0 +1,27 @@
+{
+  "name": "cgov-digital-platform-tools",
+  "version": "1.0.0",
+  "description": "Tools to manage the CGov Digital Platform",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nciocpl/cgov-digital-platform-tools.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nciocpl/cgov-digital-platform-tools/issues"
+  },
+  "homepage": "https://github.com/nciocpl/cgov-digital-platform-tools#readme",
+  "dependencies": {
+    "agentkeepalive": "^4.0.2",
+    "axios": "^0.19.0",
+    "config": "^3.1.0"
+  },
+  "devDependencies": {
+    "jest": "^24.8.0"
+  }
+}
