@@ -1,0 +1,5 @@
+## Config File
+notification_email: email@example.org
+applications:
+  sample_site_group:
+    id:  00000000-0000-0000-0000-000000000000"

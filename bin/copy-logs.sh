@@ -1,5 +1,19 @@
 #!/bin/bash
 
+## copy-logs.sh
+##   Script to copy log files off a Acquia ACSF environment
+##
+## Prerequisites:
+##   * You must have a valid ssh key registered in cloud.acquia.com with
+##     access rights to the environment you are downloading from.
+##   * A valid config file located at ~/.cgdpconfig.yml
+##
+## Parameters
+##   --site-group - the application name AKA $AH_SITE_GROUP value
+##   --env - the environment to copy AKA $AH_SITE_ENVIRONMENT
+
+
+
 ## Function to parse YAML file
 ## Borrowed Code from https://medium.com/@mike.reider/handle-bash-config-file-variables-like-a-pro-957dc9a838ed
 ## and referenced https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script
@@ -19,6 +33,7 @@ function parse_yaml {
    }'
 }
 
+## Exit with error
 die() {
   printf '%s\n' "$1" >&2
   show_help
@@ -28,11 +43,11 @@ die() {
 ## Print Usage Information
 function show_help {
   cat << EOF
-  Usage: copy-logs.sh [-options] --site-group site-group --env env
-
+  Usage:
+    copy-logs.sh [-options] --site-group <site-group> --env <environment> <target_dir>
   where options include:
-    --config\tThe config file location. DEFAULT: ~/.cgdpconfig.yml
-    -h -? --help\tprint this help message
+    --config          The config file location. DEFAULT: ~/.cgdpconfig.yml
+    -h -? --help      print this help message
 EOF
 }
 
@@ -76,6 +91,20 @@ while :; do
     --env=)
       die 'ERROR: "--env" requires a non-empty option argument.'
       ;;
+    --config)
+      if [ "$2" ]; then
+        config=$2
+        shift
+      else
+        die 'ERROR: "--config" requires a non-empty option argument.'
+      fi
+      ;;
+    --config=?*)
+      config=${1#*=} # Delete everything up to and "=" and assign remainder.
+      ;;
+    --config=)
+      die 'ERROR: "--config" requires a non-empty option argument.'
+      ;;
     -?*)
       printf "copy-logs.sh: illegal option -- %s\n" "$1" >&2
       show_help
@@ -88,6 +117,19 @@ while :; do
   shift
 done
 
+## Check required params
+if [ -z "$site_group" ]; then
+  die 'ERROR: "--site-group" is required.'
+fi
+
+if [ -z "$environment" ]; then
+  die 'ERROR: "--env" is required.'
+fi
+
+## Check config file
+if [ ! -f "$config" ]; then
+  die "Config file $config is missing"
+fi
 
 echo "$site_group $environment"
 # rsync -avzhe ssh --exclude '*.pos' user@remote:/remote/folder /local/folder
