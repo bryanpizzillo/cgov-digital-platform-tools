@@ -1,5 +1,14 @@
 ## Config File
-notification_email: email@example.org
-applications:
-  sample_site_group:
-    id:  00000000-0000-0000-0000-000000000000"
+config:
+  notification_email: email@example.org
+  applications:
+    sample_site_group:
+      id: "00000000-0000-0000-0000-000000000000"
+      environments:
+        dev_name:
+          servers: "server-a.example.org"
+        test_name:
+          servers: "server-a.example.org"
+        prod_name:
+          ## NOTE: use spaces to separate servers
+          servers: "server-b.example.org server-c.example.org"

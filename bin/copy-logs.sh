@@ -18,23 +18,24 @@
 ## Borrowed Code from https://medium.com/@mike.reider/handle-bash-config-file-variables-like-a-pro-957dc9a838ed
 ## and referenced https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script
 function parse_yaml {
-  local prefix=$2
-  local s=’[[:space:]]*’ w=’[a-zA-Z0–9_]*’ fs=$(echo @|tr @ ‘\034’)
-  sed -ne “s|^\($s\)\($w\)$s:$s\”\(.*\)\”$s\$|\1$fs\2$fs\3|p” \
-  -e “s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p” $1 |
-  awk -F$fs '{
-    indent = length($1)/2;
-    vname[indent] = $2;
-    for (i in vname) {if (i > indent) {delete vname[i]}}
-    if (length($3) > 0) {
-      vn=””; for (i=0; i<indent; i++) {vn=(vn)(vname[i])(“_”)}
-      printf(“%s%s%s=\”%s\”\n”, “‘$prefix’”,vn, $2, $3);
-    }
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
    }'
 }
 
 ## Exit with error
-die() {
+function die {
   printf '%s\n' "$1" >&2
   show_help
   exit 1
@@ -50,6 +51,25 @@ function show_help {
     -h -? --help      print this help message
 EOF
 }
+
+function copy_files {
+  local server=$1
+  local site_group=$2
+  local env=$3
+
+  echo "Copying files for $server $site_group $env"
+
+  ## Get the host by splitting off the first item before the .
+  host=`echo $server | cut -d. -f1`
+  ssh_host="${site_group}.${env}@${server}"
+  remote_path="/var/log/sites/${site_group}.${env}/logs/${host}"
+
+  echo "${ssh_host}:${remote_path}"
+  # rsync -avzhe ssh --exclude '*.pos' user@remote:/remote/folder /local/folder
+  # rsync --delete --exclude '*.pos'
+}
+
+
 
 ## Initialize options
 site_group=
@@ -131,5 +151,27 @@ if [ ! -f "$config" ]; then
   die "Config file $config is missing"
 fi
 
+## Read the config
+## TODO: TEST FOR ERROR
+eval $(parse_yaml $config)
+
+## Set servers to the config setting for this app/env
+## TODO: So we should go against the Acquia Cloud API in the future to get the
+## list of servers for the environment. For now we expect them in the config.
+server_conf="config_applications_${site_group}_environments_${environment}_servers"
+servers=${!server_conf}
+
+## Exit if bad keys
+if [ -z "$servers" ]; then
+  printf 'Servers for %s not found\n' "${site_group} ${environments}" >&2
+  exit 10
+fi
+
 echo "$site_group $environment"
-# rsync -avzhe ssh --exclude '*.pos' user@remote:/remote/folder /local/folder
+echo "$servers"
+
+## Iterate over servers and fetch files
+for server in ${servers}
+do
+  copy_files $server $site_group $environment
+done
